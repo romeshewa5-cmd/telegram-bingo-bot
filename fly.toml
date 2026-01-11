@@ -1,5 +1,5 @@
 app = "telegram-bingo-bot"
-primary_region = "iad"
+primary_region = "ams"
 
 [env]
   PORT = "8080"
