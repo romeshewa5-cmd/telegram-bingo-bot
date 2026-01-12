@@ -1,1 +1,163 @@
 
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Bingo WebApp</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+body { margin:0; background:#0f2a33; color:#fff; font-family:Arial }
+.hidden { display:none }
+.container { padding:12px; padding-bottom:70px }
+
+.card { background:#143b46; border-radius:12px; padding:12px; margin-bottom:12px }
+
+.topbar { display:flex; justify-content:space-between; font-size:13px; background:#143b46; padding:10px; border-radius:10px }
+
+.board { display:grid; grid-template-columns:repeat(10,1fr); gap:4px }
+.num { background:#1e5666; padding:6px; text-align:center; border-radius:4px; font-size:12px }
+.called { background:#2ecc71; color:#000 }
+
+.bingo-card { display:grid; grid-template-columns:repeat(5,1fr); gap:5px }
+.cell { background:#1e5666; padding:12px; text-align:center; border-radius:6px }
+.free { background:#f1c40f; color:#000 }
+.win { background:#2ecc71; color:#000 }
+
+.btn { padding:10px; background:#2ecc71; color:#000; border:none; border-radius:8px; font-weight:bold; width:100%; margin-top:10px }
+.btn.leave { background:#e74c3c; color:#fff }
+
+.center { text-align:center }
+
+</style>
+</head>
+
+<body>
+
+<!-- GAME -->
+<div id="game" class="container">
+
+  <div class="topbar">
+    <span>Game: 1</span>
+    <span>Derash: <b id="derash">304</b> ETB</span>
+    <span>Players: <b id="players">38</b></span>
+    <span>Call: <b id="callCount">0</b></span>
+    <span>Bonus: <b id="bonus">300</b></span>
+  </div>
+
+  <div class="card">
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="card">
+    <div class="bingo-card" id="bingoCard"></div>
+    <button class="btn" onclick="pressBingo()">BINGO</button>
+    <button class="btn leave" onclick="leaveGame()">LEAVE GAME</button>
+  </div>
+
+</div>
+
+<!-- RESULT -->
+<div id="result" class="container hidden">
+
+  <div class="card center">
+    <h3>?? GAME RESULT</h3>
+    <p><b>Winning Cartela #37</b></p>
+  </div>
+
+  <div class="card">
+    <div class="bingo-card" id="winningCard"></div>
+  </div>
+
+  <div class="card center">
+    <p>Winner: <b>@winner_user</b></p>
+    <p>Derash Won: <b>304 ETB</b></p>
+    <button class="btn" onclick="playAgain()">PLAY AGAIN</button>
+  </div>
+
+</div>
+
+<script>
+Telegram.WebApp.expand();
+
+let called = [];
+let bonus = 300;
+let callCount = 0;
+let interval;
+
+function initBoard() {
+  const b = document.getElementById('board');
+  for (let i = 1; i <= 75; i++) {
+    const d = document.createElement('div');
+    d.className = 'num';
+    d.id = 'n' + i;
+    d.innerText = i;
+    b.appendChild(d);
+  }
+}
+
+function initCard(elId, win=false) {
+  const c = document.getElementById(elId);
+  c.innerHTML = '';
+  for (let i = 0; i < 25; i++) {
+    const d = document.createElement('div');
+    d.className = 'cell';
+    d.innerText = i === 12 ? 'FREE' : Math.floor(Math.random()*75)+1;
+    if (i === 12) d.classList.add('free');
+    if (win && (i % 5 === 0)) d.classList.add('win');
+    c.appendChild(d);
+  }
+}
+
+function callNumber() {
+  if (callCount >= 15) {
+    endGame();
+    return;
+  }
+  let n;
+  do { n = Math.floor(Math.random()*75)+1; } while (called.includes(n));
+  called.push(n);
+  document.getElementById('n'+n).classList.add('called');
+
+  callCount++;
+  document.getElementById('callCount').innerText = callCount;
+
+  if (callCount <= 10) {
+    bonus = Math.max(0, bonus - 50);
+    document.getElementById('bonus').innerText = bonus;
+  }
+}
+
+function pressBingo() {
+  if (Math.random() > 0.5) {
+    endGame();
+  } else {
+    alert("? You don't have a winning Bingo pattern\nYou are kicked");
+    clearInterval(interval);
+  }
+}
+
+function leaveGame() {
+  alert("You left the game\nNo refund");
+  clearInterval(interval);
+}
+
+function endGame() {
+  clearInterval(interval);
+  document.getElementById('game').classList.add('hidden');
+  document.getElementById('result').classList.remove('hidden');
+  initCard('winningCard', true);
+}
+
+function playAgain() {
+  location.reload();
+}
+
+initBoard();
+initCard('bingoCard');
+interval = setInterval(callNumber, 3000);
+</script>
+
+</body>
+</html>
