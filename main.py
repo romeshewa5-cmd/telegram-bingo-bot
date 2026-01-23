@@ -1,61 +1,46 @@
 import os
-import threading
 import asyncio
+from telegram.ext import Application, CommandHandler
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 import uvicorn
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from backend import app as fastapi_app
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# --------------------
-# TELEGRAM BOT (SAFE FOR THREAD)
-# --------------------
 
-async def telegram_main():
-    async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        keyboard = [
-            [
-                InlineKeyboardButton(
-                    "🎮 Play Bingo",
-                    web_app=WebAppInfo(
-                        url="https://bingo-bot--romeshewa5.replit.app/webapp/index.html"
-                    )
-                )
-            ]
-        ]
-        await update.message.reply_text(
-            "Welcome to Bingo 🎉",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
+# -------- TELEGRAM BOT --------
+async def start(update, context):
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(
+            text="🎮 Play Bingo",
+            web_app=WebAppInfo(url="https://bingo-webapp.onrender.com")
+        )]
+    ])
+    await update.message.reply_text(
+        "Welcome to Bingo 🎉\nTap below to play:",
+        reply_markup=keyboard
+    )
 
-    application = ApplicationBuilder().token(BOT_TOKEN).build()
+
+async def run_bot():
+    application = Application.builder().token(BOT_TOKEN).build()
     application.add_handler(CommandHandler("start", start))
-
-    print("🤖 Telegram bot running...")
-
     await application.initialize()
     await application.start()
+    await application.bot.initialize()
     await application.updater.start_polling()
-
-    # keep the bot alive forever
-    await asyncio.Event().wait()
+    await application.wait_until_closed()
 
 
-def run_telegram():
-    asyncio.run(telegram_main())
-
-
-# start telegram bot in background thread
-threading.Thread(target=run_telegram, daemon=True).start()
-
-# --------------------
-# FASTAPI (MAIN PROCESS)
-# --------------------
-
+# -------- MAIN ENTRY --------
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+
+    loop = asyncio.get_event_loop()
+    loop.create_task(run_bot())
+
     uvicorn.run(
-        "backend:app",
+        fastapi_app,
         host="0.0.0.0",
-        port=int(os.environ.get("PORT", 8080)),
-        log_level="info"
+        port=port
     )
